@@ -1,0 +1,23 @@
+statement ok
+CREATE TABLE t (
+  name TEXT PRIMARY KEY,
+  num  INT
+)
+
+statement ok
+INSERT INTO t VALUES
+  ('larry', 1),
+  ('Tom', 2),
+  ('Damian', 3),
+  ('NEAL', 4),
+  ('Bjørn', 5)
+
+query I
+SELECT num FROM t WHERE name = 'neal'
+----
+4
+
+query I
+SELECT name FROM t WHERE name = ('neal' COLLATE da)
+----
+NEAL

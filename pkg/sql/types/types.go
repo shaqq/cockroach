@@ -221,6 +221,9 @@ type UserDefinedTypeName interface {
 	FQName() string
 }
 
+// Custom OIDs and types
+const T_citext oid.Oid = 50000
+
 // Convenience list of pre-constructed types. Caller code can use any of these
 // types, or use the MakeXXX methods to construct a custom type that is not
 // listed here (e.g. if a custom width is needed).
@@ -281,6 +284,10 @@ var (
 	// compatibility with PostgreSQL.
 	VarChar = &T{InternalType: InternalType{
 		Family: StringFamily, Oid: oid.T_varchar, Locale: &emptyLocale}}
+
+	// Citext (case-insensitive text) (todo: better description)
+	Citext = &T{InternalType: InternalType{
+		Family: StringFamily, Oid: T_citext, Locale: &emptyLocale}}
 
 	// Name is a type-alias for String with a different OID (T_name). It is
 	// reported as NAME in SHOW CREATE and "name" in introspection for
@@ -749,7 +756,7 @@ func MakeQChar(width int32) *T {
 //
 func MakeCollatedString(strType *T, locale string) *T {
 	switch strType.Oid() {
-	case oid.T_text, oid.T_varchar, oid.T_bpchar, oid.T_char, oid.T_name:
+	case oid.T_text, oid.T_varchar, oid.T_bpchar, oid.T_char, oid.T_name, 50000:
 		return &T{InternalType: InternalType{
 			Family: CollatedStringFamily, Oid: strType.Oid(), Width: strType.Width(), Locale: &locale}}
 	}
@@ -1181,6 +1188,8 @@ func (t *T) Name() string {
 			return "varchar"
 		case oid.T_name:
 			return "name"
+		case T_citext:
+			return "citext"
 		}
 		panic(errors.AssertionFailedf("unexpected OID: %d", t.Oid()))
 	case TimeFamily:
@@ -1372,6 +1381,8 @@ func (t *T) SQLStandardNameWithTypmod(haveTypmod bool, typmod int) string {
 			buf.WriteString("text")
 		case oid.T_varchar:
 			buf.WriteString("character varying")
+		case T_citext:
+			buf.WriteString("case-insensitive text")
 		case oid.T_bpchar:
 			if haveTypmod && typmod < 0 {
 				// Special case. Run `select format_type('bpchar'::regtype, -1);` in pg.
@@ -1560,6 +1571,8 @@ func (t *T) SQLString() string {
 // behavior. AnyFamily types match any other type, including other AnyFamily
 // types. And a wildcard collation (empty string) matches any other collation.
 func (t *T) Equivalent(other *T) bool {
+	fmt.Printf("Equivalent t: %v, other: %v\n", t, other)
+
 	if t.Family() == AnyFamily || other.Family() == AnyFamily {
 		return true
 	}
@@ -1642,6 +1655,7 @@ func (t *T) Size() (n int) {
 // Identical is the internal implementation for T.Identical. See that comment
 // for details.
 func (t *InternalType) Identical(other *InternalType) bool {
+	fmt.Printf("Identical t: %v, other: %v\n", t, other)
 	if t.Family != other.Family {
 		return false
 	}
@@ -1979,7 +1993,7 @@ func (t *T) downgradeType() error {
 
 	case StringFamily, CollatedStringFamily:
 		switch t.Oid() {
-		case oid.T_text:
+		case oid.T_text, T_citext:
 			// Nothing to do.
 		case oid.T_varchar:
 			t.InternalType.VisibleType = visibleVARCHAR
@@ -2249,6 +2263,8 @@ func (t *T) stringTypeSQL() string {
 	switch t.Oid() {
 	case oid.T_varchar:
 		typName = "VARCHAR"
+	case T_citext:
+		typName = "CITEXT"
 	case oid.T_bpchar:
 		typName = "CHAR"
 	case oid.T_char:
@@ -2274,6 +2290,7 @@ func (t *T) stringTypeSQL() string {
 var typNameLiterals map[string]*T
 
 func init() {
+	oid.TypeName[T_citext] = "CITEXT"
 	typNameLiterals = make(map[string]*T)
 	for o, t := range OidToType {
 		name, ok := oidext.TypeName(o)

@@ -90,9 +90,9 @@ var OidToType = map[oid.Oid]*T{
 	oid.T_uuid:         Uuid,
 	oid.T_varbit:       VarBit,
 	oid.T_varchar:      VarChar,
-
 	oidext.T_geometry:  Geometry,
 	oidext.T_geography: Geography,
+	50000:              Citext,
 }
 
 // oidToArrayOid maps scalar type Oids to their corresponding array type Oid.

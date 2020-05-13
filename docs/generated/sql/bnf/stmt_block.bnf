@@ -884,6 +884,7 @@ col_name_keyword ::=
 	| 'CHAR'
 	| 'CHARACTER'
 	| 'CHARACTERISTICS'
+	| 'CITEXT'
 	| 'COALESCE'
 	| 'DEC'
 	| 'DECIMAL'
@@ -2279,6 +2280,7 @@ character_base ::=
 	| char_aliases 'VARYING'
 	| 'VARCHAR'
 	| 'STRING'
+	| 'CITEXT'
 
 interval_qualifier ::=
 	'YEAR'
